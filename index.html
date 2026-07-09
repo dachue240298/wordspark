@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0F0F23">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="WordSpark">
+  <meta name="description" content="WordSpark - Học Từ Vựng Mỗi Ngày | Tiếng Anh & Tiếng Trung">
+  <title>WordSpark - Học Từ Vựng</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Language Picker (shown on first launch) -->
+    <div id="lang-picker" class="screen lang-picker-overlay">
+      <div class="lang-picker-content">
+        <div class="lang-picker-logo">✨</div>
+        <h1 class="lang-picker-title">WordSpark</h1>
+        <p class="lang-picker-subtitle">Chọn ngôn ngữ bạn muốn học</p>
+        <div class="lang-picker-cards">
+          <button class="lang-card" data-lang="en" id="lang-card-en">
+            <span class="lang-flag">🇬🇧</span>
+            <span class="lang-name">Tiếng Anh</span>
+            <span class="lang-desc">750 từ • A1→B1</span>
+          </button>
+          <button class="lang-card" data-lang="zh" id="lang-card-zh">
+            <span class="lang-flag">🇨🇳</span>
+            <span class="lang-name">Tiếng Trung</span>
+            <span class="lang-desc">300 từ • HSK1</span>
+          </button>
+        </div>
+        <p class="lang-picker-hint">Bạn có thể đổi ngôn ngữ sau trong Cài đặt</p>
+      </div>
+    </div>
+
+    <!-- Home Screen -->
+    <main id="home-screen" class="screen active">
+      <header class="app-header">
+        <div class="header-left">
+          <p class="greeting" id="greeting"></p>
+          <h1 class="app-title">WordSpark</h1>
+        </div>
+        <button class="icon-btn" id="btn-settings" aria-label="Cài đặt">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </header>
+
+      <div class="stats-row" id="stats-row">
+        <div class="stat-card stat-streak"><span class="stat-emoji">🔥</span><span class="stat-value" id="stat-streak">0</span><span class="stat-label">Streak</span></div>
+        <div class="stat-card stat-learned"><span class="stat-emoji">📚</span><span class="stat-value" id="stat-learned">0</span><span class="stat-label">Đã học</span></div>
+        <div class="stat-card stat-notif"><span class="stat-emoji">⭐</span><span class="stat-value" id="stat-xp">0</span><span class="stat-label">XP</span></div>
+      </div>
+
+      <div class="section-header">
+        <span>📖</span>
+        <h2>Từ vựng hôm nay</h2>
+        <span class="badge" id="progress-badge">0/10</span>
+      </div>
+
+      <div class="word-list" id="word-list"></div>
+    </main>
+
+    <!-- Topics Screen -->
+    <div id="topics-screen" class="screen">
+      <header class="app-header">
+        <div class="header-left">
+          <h1 class="app-title" style="font-size:22px">📚 Chủ đề</h1>
+        </div>
+      </header>
+      <div class="topics-grid" id="topics-grid"></div>
+
+      <!-- Topic Detail (word list) -->
+      <div id="topic-detail" class="topic-detail-panel hidden">
+        <header class="detail-header">
+          <button class="icon-btn" id="btn-topic-back" aria-label="Quay lại">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <h2 id="topic-detail-title" style="flex:1;text-align:center;font-size:17px"></h2>
+          <div style="width:36px"></div>
+        </header>
+        <div class="word-list" id="topic-word-list" style="padding:0 20px"></div>
+      </div>
+    </div>
+
+    <!-- Quiz Screen -->
+    <div id="quiz-screen" class="screen">
+      <header class="app-header">
+        <div class="header-left">
+          <h1 class="app-title" style="font-size:22px">🎮 Quiz Game</h1>
+        </div>
+      </header>
+      <div id="quiz-menu" class="quiz-menu"></div>
+    </div>
+
+    <!-- Quiz Game Overlay (full screen during quiz) -->
+    <div id="quiz-game" class="screen quiz-game-overlay">
+      <div class="quiz-game-header">
+        <button class="icon-btn" id="btn-quiz-close" aria-label="Thoát">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+        <div class="quiz-hud">
+          <div class="quiz-hud-item" id="quiz-hud-progress">1/10</div>
+          <div class="quiz-hud-item quiz-hud-combo" id="quiz-hud-combo">🔥 0</div>
+          <div class="quiz-hud-item" id="quiz-hud-xp">⭐ 0</div>
+        </div>
+        <div class="quiz-timer-bar"><div class="quiz-timer-fill" id="quiz-timer-fill"></div></div>
+      </div>
+      <div class="quiz-game-body" id="quiz-game-body"></div>
+    </div>
+
+    <!-- Quiz Results Overlay -->
+    <div id="quiz-results" class="screen quiz-results-overlay">
+      <div id="quiz-results-body"></div>
+    </div>
+
+    <!-- Pronunciation Practice Screen -->
+    <div id="pronun-screen" class="screen pronun-overlay">
+      <div class="pronun-header">
+        <button class="icon-btn" id="btn-pronun-close" aria-label="Thoát">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+        <div class="pronun-hud">
+          <span id="pronun-counter">1 / 10</span>
+          <span id="pronun-score">✅ 0</span>
+        </div>
+      </div>
+      <div class="pronun-body" id="pronun-body"></div>
+    </div>
+
+    <!-- Stats / Dashboard Screen (Phase 4) -->
+    <div id="stats-screen" class="screen">
+      <header class="app-header">
+        <div class="header-left">
+          <h1 class="app-title" style="font-size:22px">📊 Thống kê</h1>
+        </div>
+      </header>
+      <div id="stats-dashboard" class="stats-dashboard"></div>
+    </div>
+
+    <!-- Word Detail Screen -->
+    <div id="detail-screen" class="screen">
+      <header class="detail-header">
+        <button class="icon-btn" id="btn-back" aria-label="Quay lại">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <span class="status-badge" id="detail-status"></span>
+      </header>
+      <div class="detail-body" id="detail-body"></div>
+      <div class="detail-actions" id="detail-actions">
+        <button class="btn btn-review" id="btn-review">🔄 Học lại</button>
+        <button class="btn btn-learned" id="btn-learned">✅ Đã nhớ</button>
+      </div>
+    </div>
+
+    <!-- Settings Screen -->
+    <div id="settings-screen" class="screen">
+      <header class="detail-header">
+        <button class="icon-btn" id="btn-settings-back" aria-label="Quay lại">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <h2 style="flex:1;text-align:center;font-size:17px">⚙️ Cài đặt</h2>
+        <div style="width:36px"></div>
+      </header>
+      <div class="settings-body" id="settings-body"></div>
+    </div>
+  </div>
+
+  <!-- Bottom Tab Bar -->
+  <nav id="tab-bar" class="tab-bar">
+    <button class="tab active" data-tab="home-screen"><span class="tab-icon">🏠</span><span class="tab-label">Hôm nay</span></button>
+    <button class="tab" data-tab="topics-screen"><span class="tab-icon">📚</span><span class="tab-label">Chủ đề</span></button>
+    <button class="tab" data-tab="quiz-screen"><span class="tab-icon">🎮</span><span class="tab-label">Quiz</span></button>
+    <button class="tab" data-tab="stats-screen"><span class="tab-icon">📊</span><span class="tab-label">Thống kê</span></button>
+  </nav>
+
+  <!-- Notification Toast -->
+  <div id="notif-toast" class="notif-toast hidden">
+    <div class="notif-content">
+      <span class="notif-icon">📖</span>
+      <div class="notif-text">
+        <strong id="notif-word"></strong>
+        <span id="notif-meaning"></span>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
