@@ -1,4 +1,6 @@
 // IndexedDB wrapper for WordSpark PWA
+import { filterHomeDailyEntries, selectDailyWordIds } from './learning-state.js';
+
 const DB_NAME = 'enlight';
 const DB_VERSION = 2;
 let dbInstance = null;
@@ -147,35 +149,33 @@ export async function getDailyWords(date) {
   return req2p(idx.getAll(date));
 }
 
-export async function generateDailyWords(date, count = 10, lang = 'en') {
+export async function getHomeDailyWords(date, lang) {
   const existing = await getDailyWords(date);
-  // Filter existing by language: check if words belong to current language
-  if (existing.length > 0) {
-    // Verify first word belongs to current language
-    const firstWord = await getWord(existing[0].wordId);
-    if (firstWord && firstWord.lang === lang) return existing;
-    // If language changed, clear old daily words for today and regenerate
-    const db2 = await openDB();
-    const tx2 = db2.transaction('dailyWords', 'readwrite');
-    const s2 = tx2.objectStore('dailyWords');
-    for (const e of existing) s2.delete(e.id);
-    await new Promise((ok, no) => { tx2.oncomplete = ok; tx2.onerror = no; });
-  }
+  return filterHomeDailyEntries(existing, getWord, lang);
+}
 
-  const allIds = await getAllWordIdsByLanguage(lang);
-  const shuffled = allIds.sort(() => Math.random() - 0.5).slice(0, count);
-
+export async function replaceHomeDailyWords(date, wordIds, lang) {
+  const existing = await getHomeDailyWords(date, lang);
   const db = await openDB();
   const t = db.transaction('dailyWords', 'readwrite');
   const s = t.objectStore('dailyWords');
-  const entries = [];
-  for (const wordId of shuffled) {
-    const entry = { wordId, date, shownCount: 0, isLearned: false };
-    s.add(entry);
-    entries.push(entry);
+
+  for (const entry of existing) s.delete(entry.id);
+  for (const wordId of wordIds) {
+    s.add({ wordId, date, shownCount: 0, isLearned: false, source: 'home', lang });
   }
+
   await new Promise((ok, no) => { t.oncomplete = ok; t.onerror = no; });
-  return getDailyWords(date); // re-fetch to get auto-generated ids
+  return getHomeDailyWords(date, lang);
+}
+
+export async function generateDailyWords(date, count = 10, lang = 'en') {
+  const existing = await getHomeDailyWords(date, lang);
+  if (existing.length === count) return existing;
+
+  const allIds = (await getAllWordIdsByLanguage(lang)).sort(() => Math.random() - 0.5);
+  const selectedIds = selectDailyWordIds(existing, allIds, count);
+  return replaceHomeDailyWords(date, selectedIds, lang);
 }
 
 export async function markDailyWord(id, learned) {

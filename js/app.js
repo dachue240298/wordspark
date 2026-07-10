@@ -2,6 +2,7 @@ import * as DB from './db.js';
 import * as TTS from './tts.js';
 import * as SFX from './sfx.js';
 import { WORDS, TOPICS } from './seed-data.js';
+import { getTopicWordDisplayState } from './learning-state.js';
 
 const POS_VI = {noun:'danh từ',verb:'động từ',adj:'tính từ',adv:'trạng từ',prep:'giới từ',conj:'liên từ',intj:'thán từ',pron:'đại từ',det:'mạo từ'};
 const STATUS_VI = {new:'Mới',learning:'Đang học',review:'Ôn tập',mastered:'Đã thuộc'};
@@ -142,16 +143,11 @@ async function loadDailyWords() {
     document.getElementById('btn-daily-new').addEventListener('click', async () => {
       // Generate fresh batch avoiding already-done words
       const existingIds = dailyWordsList.map(dw => dw.wordId);
-      const allIds = await DB.getAllWordIds();
+      const allIds = await DB.getAllWordIdsByLanguage(currentLang);
       const available = allIds.filter(id => !existingIds.includes(id));
       if (available.length < 5) { actionsDiv.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:12px">Hết từ mới! Hãy thử chủ đề khác 📚</div>'; return; }
       const shuffled = available.sort(() => Math.random() - 0.5).slice(0, 10);
-      const db = await DB.openDB();
-      const t = db.transaction('dailyWords', 'readwrite');
-      const s = t.objectStore('dailyWords');
-      for (const wordId of shuffled) s.add({ wordId, date: today(), shownCount: 0, isLearned: false });
-      await new Promise((ok, no) => { t.oncomplete = ok; t.onerror = no; });
-      dailyWordsList = await DB.getDailyWords(today());
+      dailyWordsList = await DB.replaceHomeDailyWords(today(), shuffled, currentLang);
       await loadDailyWords();
     });
   } else {
@@ -369,8 +365,21 @@ async function markWord(learned) {
     await loadStats();
   } else {
     // Came from Topic Detail → go back to topics
+    let topicToRefresh = null;
+    if (learned) {
+      const word = await DB.getWord(currentWordId);
+      if (word?.topic) {
+        topicToRefresh = TOPICS.find(t => t.name === word.topic) || null;
+        let tp = await DB.getTopicProgress(word.topic);
+        if (!tp) tp = await DB.initTopicProgress(word.topic);
+        tp = await DB.getTopicProgress(word.topic);
+        const wordsLearned = [...new Set([...(tp?.wordsLearned || []), currentWordId])];
+        await DB.updateTopicProgress(word.topic, { wordsLearned });
+      }
+    }
     showScreen('topics-screen');
     await loadTopics();
+    if (topicToRefresh) await openTopicDetail(topicToRefresh);
   }
 }
 
@@ -753,17 +762,18 @@ async function openTopicDetail(topic) {
     list.appendChild(batchHeader);
 
     for (const w of batchWords) {
-      const isLearned = tp && tp.wordsLearned.includes(w.id);
+      const { isUnlocked, isLearned, shouldRevealMeaning } = getTopicWordDisplayState(w, tp, b);
       const card = document.createElement('div');
       card.className = `word-card${isLearned ? ' learned' : ''}${!isUnlocked ? ' locked' : ''}`;
+      const phonetic = w.lang === 'zh' ? w.pinyin : w.ipa;
       card.innerHTML = `
         <div class="word-num">${isLearned ? '✓' : isUnlocked ? '' : '🔒'}</div>
         <div class="word-info">
           <div class="word-top">
             <span class="word-en">${isUnlocked ? w.word : '???'}</span>
-            ${isUnlocked && w.ipa ? `<span class="word-ipa">${w.ipa}</span>` : ''}
+            ${isUnlocked && phonetic ? `<span class="word-ipa">${phonetic}</span>` : ''}
           </div>
-          <div class="word-vi">${isUnlocked ? w.vi : 'Chưa mở khóa'}</div>
+          <div class="word-vi${isUnlocked && !shouldRevealMeaning ? ' word-vi-hidden' : ''}">${shouldRevealMeaning ? w.vi : isUnlocked ? 'Bấm để đoán nghĩa...' : 'Chưa mở khóa'}</div>
         </div>
         ${isUnlocked && w.pos ? `<span class="word-pos">${POS_VI[w.pos] || w.pos}</span>` : ''}
       `;
@@ -933,9 +943,15 @@ async function finishTopicLesson() {
   document.getElementById('quiz-results').classList.add('active');
   document.getElementById('tab-bar').style.display = 'none';
 
-  document.getElementById('results-back').addEventListener('click', () => {
+  document.getElementById('results-back').addEventListener('click', async () => {
+    const finishedTopic = topicLesson.topic;
     document.getElementById('quiz-results').classList.remove('active');
-    switchTab('topics-screen');
+    activeTab = 'topics-screen';
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelector('.tab[data-tab="topics-screen"]').classList.add('active');
+    showScreen('topics-screen');
+    await loadTopics();
+    await openTopicDetail(finishedTopic);
   });
 }
 

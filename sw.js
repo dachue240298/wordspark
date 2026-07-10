@@ -1,7 +1,7 @@
-const CACHE_NAME = 'wordspark-v18';
+const CACHE_NAME = 'wordspark-v19';
 const ASSETS = [
   '/', '/index.html', '/css/style.css',
-  '/js/app.js', '/js/db.js', '/js/tts.js', '/js/sfx.js',
+  '/js/app.js', '/js/db.js', '/js/tts.js', '/js/sfx.js', '/js/learning-state.js',
   '/js/seed-data.js', '/js/seed-data-p2.js', '/js/seed-data-a2.js', '/js/seed-data-industry.js', '/js/seed-data-industry2.js',
   '/js/seed-data-zh.js', '/js/seed-data-zh2.js',
   '/manifest.json'
